@@ -2,9 +2,11 @@
 
 pub struct Kernux;
 
-pub mod error;
-pub mod log;
-pub mod prelude;
-
 #[macro_use]
 pub mod macros;
+
+pub mod bindings;
+pub mod error;
+pub mod log;
+pub mod mem;
+pub mod prelude;
