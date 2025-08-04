@@ -88,7 +88,3 @@ kernux::define_char_device! {
 ## Contributing
 
 Contributions are highly welcome! <3
-
-## License
-
-This project is licensed under the **GNU General Public License, Version 2.0** (`GPL-2.0-only`), consistent with the licensing of the Linux kernel itself.
