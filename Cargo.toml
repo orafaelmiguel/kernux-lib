@@ -1,0 +1,6 @@
+[package]
+name = "kernux"
+version = "0.0.1"
+edition = "2021"
+license = "GPL-2.0-only"
+description = "Ergonomic and safe abstractions for Rust in the Linux Kernel."
