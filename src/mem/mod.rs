@@ -2,6 +2,9 @@ use crate::bindings;
 use core::ffi::{c_void, c_ulong};
 use core::ptr;
 
+pub mod kbox;
+pub use kbox::KBox;
+
 pub type GfpFlags = c_ulong;
 
 pub const GFP_KERNEL: GfpFlags = 0xCC0;
