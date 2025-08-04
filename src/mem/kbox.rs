@@ -63,3 +63,33 @@ impl<T> DerefMut for KBox<T> {
         unsafe { self.ptr.as_mut() }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::KBox;
+
+    #[test]
+    fn kbox_new_and_deref() {
+        let val = 42;
+        let kbox = KBox::new(val).unwrap();
+        assert_eq!(*kbox, 42);
+    }
+
+    #[test]
+    fn kbox_deref_mut() {
+        let mut kbox = KBox::new(100).unwrap();
+        *kbox += 1;
+        assert_eq!(*kbox, 101);
+    }
+
+    #[test]
+    fn kbox_drop() {
+        struct DropTest(i32);
+        impl Drop for DropTest {
+            fn drop(&mut self) {
+            }
+        }
+        let dt = DropTest(1);
+        let kbox = KBox::new(dt).unwrap();
+    }
+}
