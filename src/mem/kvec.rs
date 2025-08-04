@@ -2,7 +2,9 @@ use crate::error::{KernelError, KernelResult};
 use crate::mem::{alloc, free, GFP_KERNEL};
 use core::alloc::Layout;
 use core::marker::PhantomData;
+use core::ops::{Index, IndexMut};
 use core::ptr::{self, NonNull};
+use core::slice;
 
 pub struct KVec<T> {
     ptr: NonNull<T>,
@@ -35,6 +37,15 @@ impl<T> KVec<T> {
         Ok(())
     }
 
+    pub fn pop(&mut self) -> Option<T> {
+        if self.len == 0 {
+            None
+        } else {
+            self.len -= 1;
+            unsafe { Some(ptr::read(self.ptr.as_ptr().add(self.len))) }
+        }
+    }
+
     fn grow(&mut self) -> KernelResult<()> {
         let new_cap = if self.cap == 0 { 4 } else { self.cap * 2 };
         let new_layout = Layout::array::<T>(new_cap).unwrap();
@@ -46,11 +57,7 @@ impl<T> KVec<T> {
                 return Err(KernelError::ENOMEM);
             }
             if self.cap > 0 {
-                ptr::copy_nonoverlapping(
-                    self.ptr.as_ptr() as *mut u8,
-                    ptr,
-                    old_layout.size(),
-                );
+                ptr::copy_nonoverlapping(self.ptr.as_ptr() as *mut u8, ptr, old_layout.size());
                 free(self.ptr.as_ptr() as *mut u8);
             }
             ptr
@@ -60,21 +67,45 @@ impl<T> KVec<T> {
         self.cap = new_cap;
         Ok(())
     }
+
+    pub fn iter(&self) -> slice::Iter<'_, T> {
+        self.as_slice().iter()
+    }
+
+    pub fn iter_mut(&mut self) -> slice::IterMut<'_, T> {
+        self.as_mut_slice().iter_mut()
+    }
+
+    fn as_slice(&self) -> &[T] {
+        unsafe { slice::from_raw_parts(self.ptr.as_ptr(), self.len) }
+    }
+
+    fn as_mut_slice(&mut self) -> &mut [T] {
+        unsafe { slice::from_raw_parts_mut(self.ptr.as_ptr(), self.len) }
+    }
 }
 
 impl<T> Drop for KVec<T> {
     fn drop(&mut self) {
         if self.cap > 0 {
-            while self.len > 0 {
-                self.len -= 1;
-                unsafe {
-                    let ptr = self.ptr.as_ptr().add(self.len);
-                    ptr::drop_in_place(ptr);
-                }
-            }
+            while let Some(_) = self.pop() {}
             unsafe {
                 free(self.ptr.as_ptr() as *mut u8);
             }
         }
+    }
+}
+
+impl<T> Index<usize> for KVec<T> {
+    type Output = T;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.as_slice()[index]
+    }
+}
+
+impl<T> IndexMut<usize> for KVec<T> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.as_mut_slice()[index]
     }
 }
