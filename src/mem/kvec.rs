@@ -23,6 +23,10 @@ impl<T> KVec<T> {
         }
     }
 
+    pub fn len(&self) -> usize {
+        self.len
+    }
+
     pub fn push(&mut self, value: T) -> KernelResult<()> {
         if self.len == self.cap {
             self.grow()?;
@@ -107,5 +111,69 @@ impl<T> Index<usize> for KVec<T> {
 impl<T> IndexMut<usize> for KVec<T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.as_mut_slice()[index]
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::KVec;
+
+    #[test]
+    fn kvec_new_is_empty() {
+        let vec = KVec::<u32>::new();
+        assert_eq!(vec.len(), 0);
+    }
+
+    #[test]
+    fn kvec_push_and_pop() {
+        let mut vec = KVec::new();
+        vec.push(10).unwrap();
+        vec.push(20).unwrap();
+        assert_eq!(vec.len(), 2);
+        assert_eq!(vec[0], 10);
+        assert_eq!(vec[1], 20);
+
+        assert_eq!(vec.pop(), Some(20));
+        assert_eq!(vec.len(), 1);
+
+        assert_eq!(vec.pop(), Some(10));
+        assert_eq!(vec.len(), 0);
+
+        assert_eq!(vec.pop(), None);
+    }
+
+    #[test]
+    fn kvec_growth_and_reallocation() {
+        let mut vec = KVec::new();
+        for i in 0..10 {
+            vec.push(i).unwrap();
+        }
+        assert_eq!(vec.len(), 10);
+        assert_eq!(vec[0], 0);
+        assert_eq!(vec[5], 5);
+        assert_eq!(vec[9], 9);
+    }
+
+    #[test]
+    fn kvec_index_mut() {
+        let mut vec = KVec::new();
+        vec.push(100).unwrap();
+        vec[0] += 5;
+        assert_eq!(vec[0], 105);
+    }
+
+    #[test]
+    fn kvec_iter() {
+        let mut vec = KVec::new();
+        vec.push(1).unwrap();
+        vec.push(2).unwrap();
+        vec.push(3).unwrap();
+
+        let mut sum = 0;
+        for item in vec.iter() {
+            sum += item;
+        }
+        assert_eq!(sum, 6);
     }
 }
