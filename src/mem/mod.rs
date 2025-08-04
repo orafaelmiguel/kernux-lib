@@ -3,7 +3,10 @@ use core::ffi::{c_void, c_ulong};
 use core::ptr;
 
 pub mod kbox;
+pub mod kvec;
+
 pub use kbox::KBox;
+pub use kvec::KVec;
 
 pub type GfpFlags = c_ulong;
 
