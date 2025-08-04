@@ -11,12 +11,11 @@ pub const GFP_KERNEL: GfpFlags = 0xCC0;
 pub const GFP_ATOMIC: GfpFlags = 0x80;
 
 pub(crate) unsafe fn alloc(size: c_ulong, flags: GfpFlags) -> *mut u8 {
-    let ptr = bindings::kmalloc(size, flags);
-    if ptr.is_null() {
-        ptr as *mut u8
-    } else {
-        ptr as *mut u8
-    }
+    bindings::kmalloc(size, flags) as *mut u8
+}
+
+pub(crate) unsafe fn alloc_zeroed(size: c_ulong, flags: GfpFlags) -> *mut u8 {
+    bindings::kzalloc(size, flags) as *mut u8
 }
 
 pub(crate) unsafe fn free(ptr: *mut u8) {

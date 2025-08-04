@@ -1,5 +1,5 @@
 use crate::error::{KernelError, KernelResult};
-use crate::mem::{alloc, free, GFP_KERNEL};
+use crate::mem::{alloc, alloc_zeroed, free, GFP_KERNEL};
 use core::alloc::Layout;
 use core::marker::PhantomData;
 use core::ops::{Deref, DerefMut};
@@ -33,6 +33,27 @@ impl<T> KBox<T> {
 
         Ok(KBox {
             ptr: unsafe { NonNull::new_unchecked(ptr) },
+            _marker: PhantomData,
+        })
+    }
+
+    pub unsafe fn new_zeroed() -> KernelResult<Self> {
+        let layout = Layout::new::<T>();
+        if layout.size() == 0 {
+            return Ok(KBox {
+                ptr: NonNull::dangling(),
+                _marker: PhantomData,
+            });
+        }
+
+        let raw_ptr = alloc_zeroed(layout.size() as u64, GFP_KERNEL);
+
+        if raw_ptr.is_null() {
+            return Err(KernelError::ENOMEM);
+        }
+
+        Ok(KBox {
+            ptr: unsafe { NonNull::new_unchecked(raw_ptr as *mut T) },
             _marker: PhantomData,
         })
     }
@@ -86,10 +107,21 @@ mod tests {
     fn kbox_drop() {
         struct DropTest(i32);
         impl Drop for DropTest {
-            fn drop(&mut self) {
-            }
+            fn drop(&mut self) {}
         }
         let dt = DropTest(1);
-        let kbox = KBox::new(dt).unwrap();
+        let _ = KBox::new(dt).unwrap();
+    }
+
+    #[test]
+    fn kbox_new_zeroed() {
+        #[repr(C)]
+        struct ZeroTest {
+            a: u32,
+            b: u64,
+        }
+        let kbox = unsafe { KBox::<ZeroTest>::new_zeroed().unwrap() };
+        assert_eq!(kbox.a, 0);
+        assert_eq!(kbox.b, 0);
     }
 }
